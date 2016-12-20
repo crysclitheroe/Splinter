@@ -2,14 +2,13 @@
 
 This script is written as the first in a set of simple tools to generate hypothetical mutant DNA/RNA sequences from a single wildtype sequence. mutagen.py takes as its input a single wildtype sequence and generates all the single_mutation permutations of that sequence. Ideally it reports the quantity of permutations and dumps all the hypothetical sequences to one of several filetypes for analysis.
 
-Edit* the problem has changed slightly, only certain regions of the sequence need to be mutated. By happy accident the code works perfectly if the user inputs their wildtype sequence in lower case with the mutable regions of interest in uppercase. Yay for case-specific recognition. Now adding other information, to the data, such as actual mutation and position in the string, as well as mutation type.
-
 
 """
 #import the libraries
 import pandas as pd
 import numpy as np
 import re
+import string
 
 #x-----------------------------------------------------------------------------------------------------------------------x
 # All the Functions
@@ -56,6 +55,7 @@ def single_mutants(wt,key):
  
  #replace the rest of the dataframe (empty mutant seq bases) with wildtype bases
  df = df.fillna(df.ix[0,df.columns])
+ 
 
  #change the column name for the mutations
  df = df.rename(columns = {mut_colno: 'Mutation'})
@@ -63,7 +63,7 @@ def single_mutants(wt,key):
  #drop the wild type and rows where no mutation info was set, i.e where the same mutation has already happened
  df = df[df.Mutation.notnull()]
 
-
+ return df.reset_index(drop = True)
 
 #x----------------------------------------------------------------------------------------------------------------------x
 
@@ -155,8 +155,6 @@ def del1_mutants(wt, pos):
   pattern = r'{}'.format(ind)
   matchObj = re.search(pattern, wt)
 
-  print(matchObj)
-
   if char.isupper() == True and matchObj == None:
    key = '{}{}, {}'.format(wt[ind], ind+1, pos)
    mut = list(wt)
@@ -183,10 +181,10 @@ def sdel_mutants(libr):
  names = del1.columns.tolist()
  names[names.index(new_col-1)] = 'Mutation'
  del1.columns = names
- print(del1)
+ 
  shape = len(del1.columns)
- #return del1.drop_duplicates(del1.columns[0:(shape-1)], keep = 'last').reset_index(drop = True)
- return del1.reset_index(drop = True)
+ return del1.drop_duplicates(del1.columns[0:(shape-1)], keep = 'last').reset_index(drop = True)
+ #return del1.reset_index(drop = True)
 
 #x-----------------------------------------------------------------------------------------------------------------------x
 #Function to claculate the Double deletion mutant list
@@ -217,7 +215,7 @@ def del2_mutants(del1s):
   temp_df.columns = names
   
   del2_df = del2_df.append(temp_df, ignore_index = True)
-  print(del2_df)
+  
   shape = len(del2_df.columns)
  
  return del2_df.drop_duplicates(del2_df.columns[0:(shape-1)], keep = 'last').reset_index(drop = True)
@@ -229,9 +227,9 @@ def del2_mutants(del1s):
 def del3_mutants(del2s):
  del3_df = del2_mutants(del2s)
  shape = len(del3_df.columns)
- print(del3_df)
- #return del3_df.drop_duplicates(del3_df.columns[0:(shape-1)], keep = 'last').reset_index(drop = True)
- return del3_df.reset_index(drop = True)
+ 
+ return del3_df.drop_duplicates(del3_df.columns[0:(shape-1)], keep = 'last').reset_index(drop = True)
+ #return del3_df.reset_index(drop = True)
 
 #x-----------------------------------------------------------------------------------------------------------------------x
 # a Function to place all mutants created into a dataframe
@@ -248,33 +246,68 @@ def full_mutant_df(smd,dmd,del1d,del2,del3):
  sum_df = sum_df.drop_duplicates()
  
  return sum_df.reset_index(drop = True)
+
+#x-----------------------------------------------------------------------------------------------------------------------x
+# a Function to calculate single deletion mutant combination numbers
+def factor(val):
+ factorial = 1
+ for i in range(1,val+1):
+  factorial = factorial*i
+ return factorial
+
+def del_combinator(wild, dels):
+ mr = sum([c.isupper() for c in wild])
+ #based on this calculator: http://www.calculatorsoup.com/calculators/discretemathematics/combinations.php
+ combos = factor(mr) / (factor(dels)*factor(mr-dels))
+ return combos
  
 #x-----------------------------------------------------------------------------------------------------------------------x
 # Main - menu
 #x-----------------------------------------------------------------------------------------------------------------------x
 
 #First generate a single sequence for pilot 
-user = input("\n\nxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx WELCOME TO SPLINTER xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx\n\n1) Single Deletion Mutant Library\n2) Double Deletion Mutant Library\n3) Triple Deletion Mutant Library\n4) Single Replacement Mutant Library\n5) Double Replacement Mutant Library\n6) Generate All Mutant Libraries\n\nxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx WELCOME TO SPLINTER xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx\n\nEnter value to generate desired mutant library:  ").strip(" ")
+user = input("\nxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx WELCOME TO SPLINTER xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx\n\n1) Single Deletion Mutant Library\n2) Double Deletion Mutant Library\n3) Triple Deletion Mutant Library\n4) Single Replacement Mutant Library\n5) Double Replacement Mutant Library\n6) Generate All Mutant Libraries\n\nxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx WELCOME TO SPLINTER xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx\n\nEnter value to generate desired mutant library:  ").strip(" ")
+wild = ''
 
 while user != '':
  if user == "1":
-  wild = input("\n\nEnter sequence to be mutated here, with the mutable region in upper case: \n").strip(" ")
-  #calculate permutation number here
+  if wild == '':
+   wild = input("\n\nEnter sequence to be mutated here, with the mutable region in upper case: ").strip(" ")
   filename = input("Enter a file name for the library (no spaces or other punctuation or special characters - please!): ").strip(" ")
-  print("\n\nA single deletion mutant library of xxx sequences is being generated...\n")
-  mk_filer(single_mutants(wild, ''), wild, filename)
-  user = input("\n\n...Complete!\nFile xxx has been created in the working directory.\n\nPress Enter to return to Main Menu or Escape to exit.\n\n")
-  # a is to generate a list of single deletion mutants, need to show permutation calculation number and give a summary of the created file
+  print("\n\nA single deletion mutant library of {} unique sequences is being generated...\n".format(del_combinator(wild, 1)))
+  singledf = sdel_mutants(del1_mutants(wild,''))
+  mk_filer(singledf, wild, filename)
+  user = input("...Complete!\nFile {}.xls has been created in the working directory.\n\nPress R, then Enter to return to Main Menu or Enter to exit.\n\n".format(filename))
+
  elif user == "2":
-  break # b is to generate a list of double deletion mutants, need to show permutation calculation number and give a summary of the created file
+  if wild == '':
+   wild = input("\n\nEnter sequence to be mutated here, with the mutable region in upper case: ").strip(" ")
+  filename = input("Enter a file name for the library (no spaces or other punctuation or special characters - please!): ").strip(" ")
+  print("\n\nA double deletion mutant library of {} unique sequences is being generated...\n".format(del_combinator(wild, 2)))
+  doubledf = del2_mutants(del1_mutants(wild, ''))
+  mk_filer(doubledf, wild, filename)
+  user = input("...Complete!\nFile {}.xls has been created in the working directory.\n\nPress R, then Enter to return to Main Menu or Enter to exit.\n\n".format(filename))
+
  elif user == "3":
-  break # 3 is to generate a list of Triple deletion mutants, need to show permutation calculation number and give a summary of the created file
+  if wild == '':
+   wild = input("\n\nEnter sequence to be mutated here, with the mutable region in upper case: ").strip(" ")
+  filename = input("Enter a file name for the library (no spaces or other punctuation or special characters - please!): ").strip(" ")
+  print("\n\nA triple deletion mutant library of {} unique sequences is being generated...\n".format(del_combinator(wild, 3)))
+  tripledf = del3_mutants(library_maker(del2_mutants(del1_mutants(wild,''))))
+  mk_filer(tripledf, wild, filename)
+  user = input("...Complete!\nFile {}.xls has been created in the working directory.\n\nPress R, then Enter to return to Main Menu or Enter to exit.\n\n".format(filename))
+
  elif user == "4":
-  break # 4 is to generate a list of single replacement mutants, need to show permutation calculation number and give a summary of the created file
+  if wild == '':
+   wild = input("\n\nEnter sequence to be mutated here, with the mutable region in upper case: ").strip(" ")
+
  elif user == "5":
-  break # 5 is to generate a list of double replacement mutants, need to show permutation calculation number and give a summary of the created file
+  if wild == '':
+   wild = input("\n\nEnter sequence to be mutated here, with the mutable region in upper case: ").strip(" ")
+
  elif user == "6":
   break # 6 is to generate a list of all replacement and deletion mutants, need to show number and give a summary of the created file
+
  else:
   user = input("\n\nxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx WELCOME TO SPLINTER xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx\n\n1) Single Deletion Mutant Library\n2) Double Deletion Mutant Library\n3) Triple Deletion Mutant Library\n4) Single Replacement Mutant Library\n5) Double Replacement Mutant Library\n6) Generate All Mutant Libraries\n\nxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx WELCOME TO SPLINTER xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx\n\nEnter value to generate desired mutant library:  ").strip(" ")
 
@@ -283,13 +316,8 @@ while user != '':
 #user = "gagaccgcaactgaaaagttgtTATCACTTGTCGTAAGACACTTTGGATGggttGAAgttctgcacgtagaagcaaaaggc" 
 #user = 'agAGCTct'
 
-
-#
 #mk_filer(double_mutants(library_maker(single_mutants(user,''))),user, "Double_Mutant_Library")
 #mk_filer(all_mu, user, "Mutant_Library")
-#mk_filer(del2_mutants(del1_mutants(user,'')),user,'DblDel_Mutant_Library')
-#mk_filer(del3_mutants(library_maker(del2_mutants(del1_mutants(user,'')))),user,'TrpDel_Mutant_Library')
-#mk_filer(sdel_mutants(del1_mutants(user,'')),user,'SglDel_Mutant_Library')
 
 #all_mu = full_mutant_df(single_mutants(user),double_mutants(library_maker(single_mutants(user))),del1_mutants(user),del2_mutants(del1_mutants(user)),del3_mutants(library_maker(del2_mutants(del1_mutants(user)))))
 
