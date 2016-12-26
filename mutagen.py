@@ -14,7 +14,7 @@ import string
 # All the Functions
 #x-----------------------------------------------------------------------------------------------------------------------x
 
-def single_mutants(wt,key):
+def single_mutants(wt, key):
 
  #Read in the sequence and send to a dataframe
  table = []
@@ -34,8 +34,8 @@ def single_mutants(wt,key):
  for base in bases:
   for pos in df.columns:
 
-   #create regext of current position, to search mutation info (i.e. so don't repeat mut types and position)
-   pattern = r'{}'.format(pos)
+   #create regext of current position, to search mutation info, preventing back-mutations)
+   pattern = r'{}'.format(pos+1)
    matchObj = re.search(pattern, key)
 
    #so if the base matches the wildtype and the position of previous mutation has not been covered
@@ -68,15 +68,15 @@ def single_mutants(wt,key):
 #x----------------------------------------------------------------------------------------------------------------------x
 
 def library_maker(df):
- #call the single mutants function and transpose the df, in order to count right (i.e., along the index). need to figure out why I have to do this. there must be a way to to tell pandas to do x for every row
-
+ #call the single mutants function and transpose the df, in order to count right (i.e., along the index)
  dft = df.T
  shape = len(df.columns) #to get column index, which is the mutation info, which will be used to create the keys
  mutant_dictionary = {}
  
- #put sequences in the library
+ #put sequences in the library for the double replacement mutant library
  for mu in dft:
   mutant_dictionary.update({df.ix[mu,(shape-1)] : df.ix[mu,0:(shape-1)].str.cat()})
+ 
  return mutant_dictionary
 
 #x----------------------------------------------------------------------------------------------------------------------x
@@ -88,16 +88,10 @@ def double_mutants(library):
  shape = len(ddf.columns)
 
  for key, seq in library.items():
-  ddf = ddf.append(single_mutants(seq,key), ignore_index = True)
+  ddf = ddf.append(single_mutants(seq, key), ignore_index = True)
  
- #and rows where no mutation info was set, i.e where the same mutation has already happened
- ddf = ddf[ddf.Mutation != '']
-
-
- print(ddf)
-  
- #this drop duplicates thing was a pain to figure out - remember this!
  return ddf.drop_duplicates(ddf.columns[0:(shape-1)], keep = 'last').reset_index(drop = True)
+ #Comment out above and uncomment below if you are curious about how your data looks with duplicates!
  #return ddf.reset_index(drop = True)
                 
 #x-----------------------------------------------------------------------------------------------------------------------x 
@@ -144,7 +138,7 @@ def mk_filer(df, wt, filename):
  book.save('{}.xls'.format(filename))
 
 #x-----------------------------------------------------------------------------------------------------------------------x
-#Function to claculate the Single deletion mutant list
+#Function to calculate the Single deletion mutant list
 
 def del1_mutants(wt, pos):
 
@@ -152,31 +146,35 @@ def del1_mutants(wt, pos):
  del1_diction = {}
  for ind, char in enumerate(wt):
 
+  #start the pattern for recognising and eluding positions that have been deleted 
   pattern = r'{}'.format(ind)
   matchObj = re.search(pattern, wt)
 
+  #if index is in the mutable region and the mutation is not repeated
   if char.isupper() == True and matchObj == None:
    key = '{}{}, {}'.format(wt[ind], ind+1, pos)
    mut = list(wt)
+   #Prof's feature request, place a marker whe deletion has occurred
    mut[ind] = "_"
    del1_diction[key] = "".join(mut)
 
+ #rturn a library that later functions can work with
  return del1_diction
 
 def sdel_mutants(libr):
  my_list = []
  table = []
 
- #had to do some interesting things with extend and append to get the array right
+ #rearrange the library to get the array structure consistent
  for k, v in libr.items():
   my_list = []
   my_list.extend(list(v))
   my_list.append(k)
   table.append(my_list)
- 
+ #send to a df
  del1 = pd.DataFrame(table)
 
- #stack overflow approach to solving the renaming thing
+ #Rename the column with Mutation info
  new_col = int(len(del1.columns))
  names = del1.columns.tolist()
  names[names.index(new_col-1)] = 'Mutation'
@@ -184,10 +182,11 @@ def sdel_mutants(libr):
  
  shape = len(del1.columns)
  return del1.drop_duplicates(del1.columns[0:(shape-1)], keep = 'last').reset_index(drop = True)
+ #Comment out above and uncomment below if you are curious about how your data looks with duplicates!
  #return del1.reset_index(drop = True)
 
 #x-----------------------------------------------------------------------------------------------------------------------x
-#Function to claculate the Double deletion mutant list
+#Function to calculate the Double deletion mutant list
 
 def del2_mutants(del1s):
 
@@ -219,21 +218,22 @@ def del2_mutants(del1s):
   shape = len(del2_df.columns)
  
  return del2_df.drop_duplicates(del2_df.columns[0:(shape-1)], keep = 'last').reset_index(drop = True)
+ #Comment out above and uncomment below if you are curious about how your data looks with duplicates!
  #return del2_df.reset_index(drop = True)
  
 #x-----------------------------------------------------------------------------------------------------------------------x
-#Function to claculate the Triple deletion mutant list
+#Function to calculate the Triple deletion mutant list
 
 def del3_mutants(del2s):
  del3_df = del2_mutants(del2s)
  shape = len(del3_df.columns)
  
  return del3_df.drop_duplicates(del3_df.columns[0:(shape-1)], keep = 'last').reset_index(drop = True)
- #Uncomment this if you are curious about how your data looks with duplicates!
+ #Comment out above and uncomment below if you are curious about how your data looks with duplicates!
  #return del3_df.reset_index(drop = True) 
 
 #x-----------------------------------------------------------------------------------------------------------------------x
-# Functions to calculate number of deletion mutant combinations, i.e. size of the library
+#Functions to calculate number of deletion mutant combinations, i.e. size of the library, this is a kind of internal check
 def factor(val):
  factorial = 1
  for i in range(1,val+1):
