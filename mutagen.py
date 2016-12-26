@@ -34,6 +34,7 @@ def single_mutants(wt,key):
  for base in bases:
   for pos in df.columns:
 
+   #create regext of current position, to search mutation info (i.e. so don't repeat mut types and position)
    pattern = r'{}'.format(pos)
    matchObj = re.search(pattern, key)
 
@@ -56,7 +57,6 @@ def single_mutants(wt,key):
  #replace the rest of the dataframe (empty mutant seq bases) with wildtype bases
  df = df.fillna(df.ix[0,df.columns])
  
-
  #change the column name for the mutations
  df = df.rename(columns = {mut_colno: 'Mutation'})
 
@@ -229,26 +229,11 @@ def del3_mutants(del2s):
  shape = len(del3_df.columns)
  
  return del3_df.drop_duplicates(del3_df.columns[0:(shape-1)], keep = 'last').reset_index(drop = True)
- #return del3_df.reset_index(drop = True)
+ #Uncomment this if you are curious about how your data looks with duplicates!
+ #return del3_df.reset_index(drop = True) 
 
 #x-----------------------------------------------------------------------------------------------------------------------x
-# a Function to place all mutants created into a dataframe
-
-def full_mutant_df(smd,dmd,del1d,del2,del3):
- table = []
- for k, v in del1d.items():
-  table.append(list(v))
- del1 = pd.DataFrame(table)
- frames = [smd,dmd,del1,del2,del3]
-  
- sum_df = pd.concat(frames, ignore_index=True)
- sum_df = sum_df.fillna('')
- sum_df = sum_df.drop_duplicates()
- 
- return sum_df.reset_index(drop = True)
-
-#x-----------------------------------------------------------------------------------------------------------------------x
-# a Function to calculate single deletion mutant combination numbers
+# Functions to calculate number of deletion mutant combinations, i.e. size of the library
 def factor(val):
  factorial = 1
  for i in range(1,val+1):
@@ -273,7 +258,7 @@ while user != '':
  if user == "1":
   if wild == '':
    wild = input("\n\nEnter sequence to be mutated here, with the mutable region in upper case: ").strip(" ")
-  filename = input("Enter a file name for the library (no spaces or other punctuation or special characters - please!): ").strip(" ")
+  filename = input("Enter a file name for the library (no spaces, punctuation or special characters - please!): ").strip(" ")
   print("\n\nA single deletion mutant library of {} unique sequences is being generated...\n".format(del_combinator(wild, 1)))
   singledf = sdel_mutants(del1_mutants(wild,''))
   mk_filer(singledf, wild, filename)
@@ -282,7 +267,7 @@ while user != '':
  elif user == "2":
   if wild == '':
    wild = input("\n\nEnter sequence to be mutated here, with the mutable region in upper case: ").strip(" ")
-  filename = input("Enter a file name for the library (no spaces or other punctuation or special characters - please!): ").strip(" ")
+  filename = input("Enter a file name for the library (no spaces, punctuation or special characters - please!): ").strip(" ")
   print("\n\nA double deletion mutant library of {} unique sequences is being generated...\n".format(del_combinator(wild, 2)))
   doubledf = del2_mutants(del1_mutants(wild, ''))
   mk_filer(doubledf, wild, filename)
@@ -291,19 +276,27 @@ while user != '':
  elif user == "3":
   if wild == '':
    wild = input("\n\nEnter sequence to be mutated here, with the mutable region in upper case: ").strip(" ")
-  filename = input("Enter a file name for the library (no spaces or other punctuation or special characters - please!): ").strip(" ")
+  filename = input("Enter a file name for the library (no spaces, punctuation or special characters - please!): ").strip(" ")
   print("\n\nA triple deletion mutant library of {} unique sequences is being generated...\n".format(del_combinator(wild, 3)))
   tripledf = del3_mutants(library_maker(del2_mutants(del1_mutants(wild,''))))
   mk_filer(tripledf, wild, filename)
-  user = input("...Complete!\nFile {}.xls has been created in the working directory.\n\nPress R, then Enter to return to Main Menu or Enter to exit.\n\n".format(filename))
+  user = input("...Complete!\nFile {}.xls has been created in the working directory.\n\nPress r, then Enter to return to Main Menu or Enter to exit.\n\n".format(filename))
 
  elif user == "4":
   if wild == '':
    wild = input("\n\nEnter sequence to be mutated here, with the mutable region in upper case: ").strip(" ")
+  filename = input("Enter a file name for the library (no spaces, punctuation or special characters - please!): ").strip(" ")
+  srepdf = single_mutants(wild,'')
+  mk_filer(srepdf, wild, filename)
+  user = input("...Complete!\nFile {}.xls has been created in the working directory.\n\nPress r, then Enter to return to Main Menu or Enter to exit.\n\n".format(filename))
 
  elif user == "5":
   if wild == '':
    wild = input("\n\nEnter sequence to be mutated here, with the mutable region in upper case: ").strip(" ")
+  filename = input("Enter a file name for the library (no spaces, punctuation or special characters - please!): ").strip(" ")
+  drepdf = double_mutants(library_maker(single_mutants(wild,'')))
+  mk_filer(drepdf, wild, filename)
+  user = input("...Complete!\nFile {}.xls has been created in the working directory.\n\nPress r, then Enter to return to Main Menu or Enter to exit.\n\n".format(filename))
 
  elif user == "6":
   break # 6 is to generate a list of all replacement and deletion mutants, need to show number and give a summary of the created file
@@ -312,14 +305,7 @@ while user != '':
   user = input("\n\nxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx WELCOME TO SPLINTER xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx\n\n1) Single Deletion Mutant Library\n2) Double Deletion Mutant Library\n3) Triple Deletion Mutant Library\n4) Single Replacement Mutant Library\n5) Double Replacement Mutant Library\n6) Generate All Mutant Libraries\n\nxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx WELCOME TO SPLINTER xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx\n\nEnter value to generate desired mutant library:  ").strip(" ")
 
  
-#user = input("Enter sequence to be mutated here, with the mutable region in upper case: ").strip(" ")
-#user = "gagaccgcaactgaaaagttgtTATCACTTGTCGTAAGACACTTTGGATGggttGAAgttctgcacgtagaagcaaaaggc" 
-#user = 'agAGCTct'
 
-#mk_filer(double_mutants(library_maker(single_mutants(user,''))),user, "Double_Mutant_Library")
-#mk_filer(all_mu, user, "Mutant_Library")
-
-#all_mu = full_mutant_df(single_mutants(user),double_mutants(library_maker(single_mutants(user))),del1_mutants(user),del2_mutants(del1_mutants(user)),del3_mutants(library_maker(del2_mutants(del1_mutants(user)))))
 
 
 
