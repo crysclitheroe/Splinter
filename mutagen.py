@@ -1,6 +1,6 @@
 """
 
-This script is written as the first in a set of simple tools to generate hypothetical mutant DNA/RNA sequences from a single wildtype sequence. mutagen.py takes as its input a single wildtype sequence and generates all the single_mutation permutations of that sequence. Ideally it reports the quantity of permutations and dumps all the hypothetical sequences to one of several filetypes for analysis.
+This script is written as the first in a set of simple tools to generate hypothetical mutant DNA/RNA sequences from a single wildtype sequence. mutagen.py takes as its input a single wildtype sequence and generates all the single_mutation permutations of that sequence. Ideally it reports the quantity of permutations and dumps all the hypothetical sequences to excel, as this is commonly the format that one sends the library to sequence generation companies (e.g. Applied Biosciences).
 
 
 """
@@ -8,11 +8,126 @@ This script is written as the first in a set of simple tools to generate hypothe
 import pandas as pd
 import numpy as np
 import re
-import string
 
 #x-----------------------------------------------------------------------------------------------------------------------x
 # All the Functions
 #x-----------------------------------------------------------------------------------------------------------------------x
+
+#x-----------------------------------------------------------------------------------------------------------------------x
+# Option 1) Function to calculate the Single deletion mutant list 
+
+def del1_mutants(wt, pos):
+
+ #start dictionary
+ del1_diction = {}
+ for ind, char in enumerate(wt):
+
+  #start the pattern for recognising and eluding positions that have been deleted 
+  pattern = r'{}'.format(ind)
+  matchObj = re.search(pattern, wt)
+
+  #if index is in the mutable region and the mutation is not repeated
+  if char.isupper() == True and matchObj == None:
+   key = '{}{}, {}'.format(wt[ind], ind+1, pos)
+   mut = list(wt)
+   #Prof's feature request, place a marker whe deletion has occurred
+   mut[ind] = "_"
+   del1_diction[key] = "".join(mut)
+
+ #rturn a library that later functions can work with
+ return del1_diction
+
+def sdel_mutants(libr):
+ my_list = []
+ table = []
+
+ #rearrange the library to get the array structure consistent
+ for k, v in libr.items():
+  my_list = []
+  my_list.extend(list(v))
+  my_list.append(k)
+  table.append(my_list)
+ #send to a df
+ del1 = pd.DataFrame(table)
+
+ #Rename the column with Mutation info
+ new_col = int(len(del1.columns))
+ names = del1.columns.tolist()
+ names[names.index(new_col-1)] = 'Mutation'
+ del1.columns = names
+ 
+ #get df attributes to process and return only unique sequence data
+ shape = len(del1.columns)
+ return del1.drop_duplicates(del1.columns[0:(shape-1)], keep = 'last').reset_index(drop = True)
+ #Comment out above and uncomment below if you are curious about how your data looks with duplicates!
+ #return del1.reset_index(drop = True)
+
+#x-----------------------------------------------------------------------------------------------------------------------x
+# Option 2) Function to calculate the Double deletion mutant list
+
+def del2_mutants(del1s):
+
+ del2_df = pd.DataFrame()
+
+ for key, mut in del1s.items():
+  temp = del1_mutants(mut,key) 
+  table = []
+
+  for k, v in temp.items():
+
+   pattern = r'{}'.format(key)
+   matchObj = re.search(pattern, mut)
+
+   my_list = []
+   my_list.extend(list(v))
+   my_list.append(k)
+   table.append(my_list)
+  temp_df = pd.DataFrame(table)
+
+  #Renaming the mutation column 
+  new_col = int(len(temp_df.columns))
+  names = temp_df.columns.tolist()
+  names[names.index(new_col-1)] = 'Mutation'
+  temp_df.columns = names
+  
+  #get df attributes to process and return only unique sequence data
+  del2_df = del2_df.append(temp_df, ignore_index = True)
+  shape = len(del2_df.columns)
+ 
+ return del2_df.drop_duplicates(del2_df.columns[0:(shape-1)], keep = 'last').reset_index(drop = True)
+ #Comment out above and uncomment below if you are curious about how your data looks with duplicates!
+ #return del2_df.reset_index(drop = True)
+ 
+#x-----------------------------------------------------------------------------------------------------------------------x
+# Option 3) Function to calculate the Triple deletion mutant list
+
+def del3_mutants(del2s):
+ del3_df = del2_mutants(del2s)
+ shape = len(del3_df.columns)
+ 
+ return del3_df.drop_duplicates(del3_df.columns[0:(shape-1)], keep = 'last').reset_index(drop = True)
+ #Comment out above and uncomment below if you are curious about how your data looks with duplicates!
+ #return del3_df.reset_index(drop = True) 
+
+#x-----------------------------------------------------------------------------------------------------------------------x
+#Functions to calculate number of deletion mutant combinations, i.e. size of the library, this is a kind of internal check
+
+def factor(val):
+
+ factorial = 1
+ for i in range(1,val+1):
+  factorial = factorial*i
+ return factorial
+
+def del_combinator(wild, dels):
+ 
+ #based on this calculator: http://www.calculatorsoup.com/calculators/discretemathematics/combinations.php
+ mr = sum([c.isupper() for c in wild])
+ combos = factor(mr) / (factor(dels)*factor(mr-dels))
+ return combos
+
+#x-----------------------------------------------------------------------------------------------------------------------x
+# Option 4) Functions to calculate a single replacement mutant library
 
 def single_mutants(wt, key):
 
@@ -66,6 +181,7 @@ def single_mutants(wt, key):
  return df.reset_index(drop = True)
 
 #x----------------------------------------------------------------------------------------------------------------------x
+# An in-between step that I should probably see if I can remove at some point
 
 def library_maker(df):
  #call the single mutants function and transpose the df, in order to count right (i.e., along the index)
@@ -80,6 +196,7 @@ def library_maker(df):
  return mutant_dictionary
 
 #x----------------------------------------------------------------------------------------------------------------------x
+# Option 5) Functions to calculate a double replacement mutant library
 
 def double_mutants(library):
  
@@ -95,27 +212,12 @@ def double_mutants(library):
  #return ddf.reset_index(drop = True)
                 
 #x-----------------------------------------------------------------------------------------------------------------------x 
-#Function to create files
+# Function to create excel files
 
 def mk_filer(df, wt, filename):
 
  dft = df.T
  shape = len(df.columns)
-
- #the fasta file writer is broken. Which is probably a good thin because I need to modernify it
- #open and write fasta file
- #from sys import argv
- #fafile = open('{}.fa'.format(filename), 'w')
- 
- #remove the data to sequence strings
- #for mu in dft:
-
-  #fafile.write('>mutant_{}'.format(df.Mutation))
-  #fafile.write('\n')
-  #fafile.write(df.ix[mu,0:(shape-1)].str.cat().upper())
-  #fafile.write('\n')
-
- #fafile.close()
 
  #open and write to excel
  import xlwt
@@ -138,120 +240,11 @@ def mk_filer(df, wt, filename):
  book.save('{}.xls'.format(filename))
 
 #x-----------------------------------------------------------------------------------------------------------------------x
-#Function to calculate the Single deletion mutant list
-
-def del1_mutants(wt, pos):
-
- #start dictionary
- del1_diction = {}
- for ind, char in enumerate(wt):
-
-  #start the pattern for recognising and eluding positions that have been deleted 
-  pattern = r'{}'.format(ind)
-  matchObj = re.search(pattern, wt)
-
-  #if index is in the mutable region and the mutation is not repeated
-  if char.isupper() == True and matchObj == None:
-   key = '{}{}, {}'.format(wt[ind], ind+1, pos)
-   mut = list(wt)
-   #Prof's feature request, place a marker whe deletion has occurred
-   mut[ind] = "_"
-   del1_diction[key] = "".join(mut)
-
- #rturn a library that later functions can work with
- return del1_diction
-
-def sdel_mutants(libr):
- my_list = []
- table = []
-
- #rearrange the library to get the array structure consistent
- for k, v in libr.items():
-  my_list = []
-  my_list.extend(list(v))
-  my_list.append(k)
-  table.append(my_list)
- #send to a df
- del1 = pd.DataFrame(table)
-
- #Rename the column with Mutation info
- new_col = int(len(del1.columns))
- names = del1.columns.tolist()
- names[names.index(new_col-1)] = 'Mutation'
- del1.columns = names
- 
- shape = len(del1.columns)
- return del1.drop_duplicates(del1.columns[0:(shape-1)], keep = 'last').reset_index(drop = True)
- #Comment out above and uncomment below if you are curious about how your data looks with duplicates!
- #return del1.reset_index(drop = True)
-
-#x-----------------------------------------------------------------------------------------------------------------------x
-#Function to calculate the Double deletion mutant list
-
-def del2_mutants(del1s):
-
- del2_df = pd.DataFrame()
-
- for key, mut in del1s.items():
-  temp = del1_mutants(mut,key) 
-  table = []
-
-  for k, v in temp.items():
-
-   pattern = r'{}'.format(key)
-   matchObj = re.search(pattern, mut)
-
-   my_list = []
-   my_list.extend(list(v))
-   my_list.append(k)
-   table.append(my_list)
-  temp_df = pd.DataFrame(table)
-
-  #stack overflow approach to solving the renaming mutation column for now
-  new_col = int(len(temp_df.columns))
-  names = temp_df.columns.tolist()
-  names[names.index(new_col-1)] = 'Mutation'
-  temp_df.columns = names
-  
-  del2_df = del2_df.append(temp_df, ignore_index = True)
-  
-  shape = len(del2_df.columns)
- 
- return del2_df.drop_duplicates(del2_df.columns[0:(shape-1)], keep = 'last').reset_index(drop = True)
- #Comment out above and uncomment below if you are curious about how your data looks with duplicates!
- #return del2_df.reset_index(drop = True)
- 
-#x-----------------------------------------------------------------------------------------------------------------------x
-#Function to calculate the Triple deletion mutant list
-
-def del3_mutants(del2s):
- del3_df = del2_mutants(del2s)
- shape = len(del3_df.columns)
- 
- return del3_df.drop_duplicates(del3_df.columns[0:(shape-1)], keep = 'last').reset_index(drop = True)
- #Comment out above and uncomment below if you are curious about how your data looks with duplicates!
- #return del3_df.reset_index(drop = True) 
-
-#x-----------------------------------------------------------------------------------------------------------------------x
-#Functions to calculate number of deletion mutant combinations, i.e. size of the library, this is a kind of internal check
-def factor(val):
- factorial = 1
- for i in range(1,val+1):
-  factorial = factorial*i
- return factorial
-
-def del_combinator(wild, dels):
- mr = sum([c.isupper() for c in wild])
- #based on this calculator: http://www.calculatorsoup.com/calculators/discretemathematics/combinations.php
- combos = factor(mr) / (factor(dels)*factor(mr-dels))
- return combos
- 
-#x-----------------------------------------------------------------------------------------------------------------------x
 # Main - menu
 #x-----------------------------------------------------------------------------------------------------------------------x
 
 #First generate a single sequence for pilot 
-user = input("\nxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx WELCOME TO SPLINTER xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx\n\n1) Single Deletion Mutant Library\n2) Double Deletion Mutant Library\n3) Triple Deletion Mutant Library\n4) Single Replacement Mutant Library\n5) Double Replacement Mutant Library\n6) Generate All Mutant Libraries\n\nxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx WELCOME TO SPLINTER xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx\n\nEnter value to generate desired mutant library:  ").strip(" ")
+user = input("\nxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx WELCOME TO SPLINTER xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx\n\n1) Single Deletion Mutant Library\n2) Double Deletion Mutant Library\n3) Triple Deletion Mutant Library\n4) Single Replacement Mutant Library\n5) Double Replacement Mutant Library\n\nxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx WELCOME TO SPLINTER xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx\n\nEnter value to generate desired mutant library:  ").strip(" ")
 wild = ''
 
 while user != '':
@@ -262,7 +255,7 @@ while user != '':
   print("\n\nA single deletion mutant library of {} unique sequences is being generated...\n".format(del_combinator(wild, 1)))
   singledf = sdel_mutants(del1_mutants(wild,''))
   mk_filer(singledf, wild, filename)
-  user = input("...Complete!\nFile {}.xls has been created in the working directory.\n\nPress R, then Enter to return to Main Menu or Enter to exit.\n\n".format(filename))
+  user = input("...Complete!\nFile {}.xls has been created in the working directory.\n\nPress r, then Enter to return to Main Menu or Enter to exit.\n\n".format(filename))
 
  elif user == "2":
   if wild == '':
@@ -271,7 +264,7 @@ while user != '':
   print("\n\nA double deletion mutant library of {} unique sequences is being generated...\n".format(del_combinator(wild, 2)))
   doubledf = del2_mutants(del1_mutants(wild, ''))
   mk_filer(doubledf, wild, filename)
-  user = input("...Complete!\nFile {}.xls has been created in the working directory.\n\nPress R, then Enter to return to Main Menu or Enter to exit.\n\n".format(filename))
+  user = input("...Complete!\nFile {}.xls has been created in the working directory.\n\nPress r, then Enter to return to Main Menu or Enter to exit.\n\n".format(filename))
 
  elif user == "3":
   if wild == '':
@@ -298,11 +291,8 @@ while user != '':
   mk_filer(drepdf, wild, filename)
   user = input("...Complete!\nFile {}.xls has been created in the working directory.\n\nPress r, then Enter to return to Main Menu or Enter to exit.\n\n".format(filename))
 
- elif user == "6":
-  break # 6 is to generate a list of all replacement and deletion mutants, need to show number and give a summary of the created file
-
  else:
-  user = input("\n\nxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx WELCOME TO SPLINTER xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx\n\n1) Single Deletion Mutant Library\n2) Double Deletion Mutant Library\n3) Triple Deletion Mutant Library\n4) Single Replacement Mutant Library\n5) Double Replacement Mutant Library\n6) Generate All Mutant Libraries\n\nxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx WELCOME TO SPLINTER xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx\n\nEnter value to generate desired mutant library:  ").strip(" ")
+  user = input("\n\nxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx WELCOME TO SPLINTER xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx\n\n1) Single Deletion Mutant Library\n2) Double Deletion Mutant Library\n3) Triple Deletion Mutant Library\n4) Single Replacement Mutant Library\n5) Double Replacement Mutant Library\n\nxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx WELCOME TO SPLINTER xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx\n\nEnter value to generate desired mutant library:  ").strip(" ")
 
  
 
