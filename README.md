@@ -5,15 +5,16 @@ Splinter is a simple command line script intended to be used as a full coverage 
 The research in [the lab where I'm currently working] (http://yokobayashilab.net), focuses on probing the secondary structure of functional ribozymes, by assaying full coverage single and double replacement mutant libraries of some wildtype sequence of interest. See [Kobori, et al. 2015] (https://www.ncbi.nlm.nih.gov/pubmed/27461281) for an example of this research. This is a similar approach to that used in [Double Mutant Cycle Analysis] (http://www.sciencedirect.com/science/article/pii/S1359027896000569) for protein structure probing. 
 
 ## How Splinter Works 
-Download the Splinter was written in [Python3] (https://www.python.org/downloads/) and runs from the command line. Just download the file mutagen.py and save it to your working directory. Then run from the command line:
+Splinter runs in [Python3] (https://www.python.org/downloads/) from the command line. Just download the file mutagen.py and save it to your working directory. Then run it from the command line as follows:
 
 ```markdown
-bioinfo:home$ python /path-to-working-directory/mutagen.py
+bioinfo:home$ python /home/path-to-working-directory/mutagen.py
 
 xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx WELCOME TO SPLINTER xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
 
 etc...
 ```
+Follow the command line prompts, and you're bound to come right.
 
 ### Dependencies
 ```markdown
@@ -22,7 +23,7 @@ etc...
 ```
 ### Input
 
-It takes from the user a single wildtype DNA sequence, with non-mutable regions in lowercase and the mutable regions bases in uppcase:
+It takes from the user a single wildtype DNA sequence, with bases from non-mutable regions in lowercase and bases from the mutable regions in uppercase:
 
 For example, your input/wildtype sequence is:
 
@@ -42,7 +43,7 @@ And similarly for the double deletion, triple deletion, single replacement and d
 
 ### Contact 
 
-I have so much to learn :) so feel free to email me if you have any questions, comments, concerns and/or suggestions about the code. 
+I have much to learn, so feel free to email me if you have any questions, comments, concerns and/or suggestions about the code. 
 
 Crys
 
