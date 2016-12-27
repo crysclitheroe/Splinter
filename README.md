@@ -1,37 +1,48 @@
-## Welcome to GitHub Pages
+## Welcome to Splinter (v1.0)
 
-You can use the [editor on GitHub](https://github.com/Tipplynne/Splinter/edit/master/README.md) to maintain and preview the content for your website in Markdown files.
+Splinter is a simple command line script intended to be used as a full coverage mutant library generator. It was originally created as a quick and nasty script for generating mutant DNA libraries. I could not find any applications on the internet that do this, so here's mine.
 
-Whenever you commit to this repository, GitHub Pages will run [Jekyll](https://jekyllrb.com/) to rebuild the pages in your site, from the content in your Markdown files.
+The research in [the lab where I'm currently working] (http://yokobayashilab.net), focuses on probing the secondary structure of functional ribozymes, by assaying full coverage single and double replacement mutant libraries of some wildtype sequence of interest. See [Kobori, et al. 2015] (https://www.ncbi.nlm.nih.gov/pubmed/27461281) for an example of this research. This is a similar approach to that used in [Double Mutant Cycle Analysis] (http://www.sciencedirect.com/science/article/pii/S1359027896000569) for protein structure probing. 
 
-### Markdown
-
-Markdown is a lightweight and easy-to-use syntax for styling your writing. It includes conventions for
+## How Splinter Works 
+Download the Splinter was written in [Python3] (https://www.python.org/downloads/) and runs from the command line. Just download the file mutagen.py and save it to your working directory. Then run from the command line:
 
 ```markdown
-Syntax highlighted code block
+bioinfo:home$ python /path-to-working-directory/mutagen.py
 
-# Header 1
-## Header 2
-### Header 3
+xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx WELCOME TO SPLINTER xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
 
-- Bulleted
-- List
-
-1. Numbered
-2. List
-
-**Bold** and _Italic_ and `Code` text
-
-[Link](url) and ![Image](src)
+etc...
 ```
 
-For more details see [GitHub Flavored Markdown](https://guides.github.com/features/mastering-markdown/).
+### Dependencies
+```markdown
+[Numpy1.1] (http://www.numpy.org) or higher.
+[pandas0.19] (http://pandas.pydata.org) or higher.
+```
+### Input
 
-### Jekyll Themes
+It takes from the user a single wildtype DNA sequence, with non-mutable regions in lowercase and the mutable regions bases in uppcase:
 
-Your Pages site will use the layout and styles from the Jekyll theme you have selected in your [repository settings](https://github.com/Tipplynne/Splinter/settings). The name of this theme is saved in the Jekyll `_config.yml` configuration file.
+For example, your input/wildtype sequence is:
 
-### Support or Contact
+acACGTgt
 
-Having trouble with Pages? Check out our [documentation](https://help.github.com/categories/github-pages-basics/) or [contact support](https://github.com/contact) and we’ll help you sort it out.
+All mutant bases in lowercase will be fixed, whereas the uppercase bases will be mutated. So for example, the input above would generate a single deletion library of four sequences for full coverage of the mutable region:
+
+```markdown
+ID	        Sequence	Mutation
+Wildtype	acACGTgt	
+0	        AC_CGTGT	A3, 
+1	        ACAC_TGT	G5, 
+2	        ACA_GTGT	C4, 
+3	        ACACG_GT	T6, 
+```
+And similarly for the double deletion, triple deletion, single replacement and double replacement mutant libraries. All libraries are output to an excel file, which most manufacturers (e.g. [IDT] (http://sg.idtdna.com/site)) will accept to produce your oligonucleotides.
+
+### Contact 
+
+I have so much to learn :) so feel free to email me if you have any questions, comments, concerns and/or suggestions about the code. 
+
+Crys
+larvalanobium(at)gmail.com
