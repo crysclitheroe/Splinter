@@ -2,7 +2,7 @@
 
 Splinter is a simple command line script intended to be used as a full coverage mutant library generator. It was originally created as a quick and nasty script for generating mutant DNA libraries. I could not find any applications on the internet that do this, so here's mine.
 
-The research in [the lab where I'm currently working] (http://yokobayashilab.net), focuses on probing the secondary structure of functional ribozymes, by assaying full coverage single and double replacement mutant libraries of some wildtype sequence of interest. See [Kobori, et al. 2015] (https://www.ncbi.nlm.nih.gov/pubmed/27461281) for an example of this research. This is a similar approach to that used in [Double Mutant Cycle Analysis] (http://www.sciencedirect.com/science/article/pii/S1359027896000569) for protein structure probing. 
+The research in [the lab where Iused to work] (http://yokobayashilab.net), focuses on probing the secondary structure of functional ribozymes, by assaying full coverage single and double replacement mutant libraries of some wildtype sequence of interest. See [Kobori, et al. 2015] (https://www.ncbi.nlm.nih.gov/pubmed/27461281) for an example of this research. This is a similar approach to that used in [Double Mutant Cycle Analysis] (http://www.sciencedirect.com/science/article/pii/S1359027896000569) for protein structure probing. 
 
 ## How Splinter Works 
 Splinter runs in [Python3] (https://www.python.org/downloads/) from the command line. Just download the file mutagen.py and save it to your working directory. Then run it from the command line as follows:
